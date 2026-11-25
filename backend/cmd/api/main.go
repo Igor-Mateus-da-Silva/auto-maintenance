@@ -50,6 +50,8 @@ func main() {
 	authHandler := handler.NewAuthHandler(cfg.AppAccessKey, cfg.JWTSecret)
 	vehicleHandler := handler.NewVehicleHandler(db)
 	maintenanceTypeHandler := handler.NewMaintenanceTypeHandler(db)
+	vehicleMaintenanceHandler := handler.NewVehicleMaintenanceHandler(db)
+	dashboardHandler := handler.NewDashboardHandler(db)
 	requireAuth := middleware.RequireAuth(cfg.JWTSecret)
 
 	mux := http.NewServeMux()
@@ -73,6 +75,15 @@ func main() {
 	mux.Handle("POST /api/maintenance-types", requireAuth(http.HandlerFunc(maintenanceTypeHandler.Create)))
 	mux.Handle("PUT /api/maintenance-types/{id}", requireAuth(http.HandlerFunc(maintenanceTypeHandler.Update)))
 	mux.Handle("DELETE /api/maintenance-types/{id}", requireAuth(http.HandlerFunc(maintenanceTypeHandler.Delete)))
+
+	// Protected routes - Vehicle Maintenances
+	mux.Handle("GET /api/vehicles/{id}/maintenances", requireAuth(http.HandlerFunc(vehicleMaintenanceHandler.ListByVehicle)))
+	mux.Handle("POST /api/vehicles/{id}/maintenances", requireAuth(http.HandlerFunc(vehicleMaintenanceHandler.Create)))
+	mux.Handle("PUT /api/vehicle-maintenances/{id}", requireAuth(http.HandlerFunc(vehicleMaintenanceHandler.Update)))
+	mux.Handle("DELETE /api/vehicle-maintenances/{id}", requireAuth(http.HandlerFunc(vehicleMaintenanceHandler.Delete)))
+
+	// Protected routes - Dashboard
+	mux.Handle("GET /api/dashboard", requireAuth(http.HandlerFunc(dashboardHandler.Get)))
 
 	// Chain global middlewares: Logger and CORS
 	corsMiddleware := middleware.CORS(cfg.CORSAllowedOrigins)
