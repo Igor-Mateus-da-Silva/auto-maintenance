@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"car-maintenance/internal/config"
+	"car-maintenance/internal/database"
 	"car-maintenance/internal/handler"
 	"car-maintenance/internal/middleware"
 )
@@ -24,10 +25,39 @@ func main() {
 
 	cfg := config.Load()
 
+	// Initialize SQLite database
+	db, err := database.Connect(cfg.DBPath)
+	if err != nil {
+		slog.Error("Failed to initialize database", "error", err, "path", cfg.DBPath)
+		os.Exit(1)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Error("Error closing database connection", "error", err)
+		} else {
+			slog.Info("Database connection closed cleanly")
+		}
+	}()
+
+	// Run migrations
+	if err := database.RunMigrations(db); err != nil {
+		slog.Error("Failed to run database migrations", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Database migrations completed successfully", "path", cfg.DBPath)
+
+	// Handlers and middlewares
+	authHandler := handler.NewAuthHandler(cfg.AppAccessKey, cfg.JWTSecret)
+	requireAuth := middleware.RequireAuth(cfg.JWTSecret)
+
 	mux := http.NewServeMux()
 
-	// Register routes using Go standard library net/http (method + path routing)
+	// Public routes
 	mux.HandleFunc("GET /api/health", handler.HealthHandler)
+	mux.HandleFunc("POST /api/login", authHandler.Login)
+
+	// Protected routes
+	mux.Handle("GET /api/auth/verify", requireAuth(http.HandlerFunc(authHandler.Verify)))
 
 	// Chain global middlewares: Logger and CORS
 	corsMiddleware := middleware.CORS(cfg.CORSAllowedOrigins)
