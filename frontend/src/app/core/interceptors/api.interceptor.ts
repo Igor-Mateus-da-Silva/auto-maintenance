@@ -1,12 +1,36 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, throwError } from 'rxjs';
+import { AuthService } from '../services/auth.service';
 
 export const apiInterceptor: HttpInterceptorFn = (req, next) => {
-  // Configured for future auth token attachment and base request handling
-  const cloned = req.clone({
+  const authService = inject(AuthService);
+
+  const isPublicEndpoint = req.url.endsWith('/login') || req.url.endsWith('/health');
+
+  let request = req.clone({
     setHeaders: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
     }
   });
 
-  return next(cloned);
+  if (!isPublicEndpoint) {
+    const token = authService.getToken();
+    if (token) {
+      request = request.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+    }
+  }
+
+  return next(request).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status === 401 && !isPublicEndpoint) {
+        authService.logout();
+      }
+      return throwError(() => error);
+    })
+  );
 };

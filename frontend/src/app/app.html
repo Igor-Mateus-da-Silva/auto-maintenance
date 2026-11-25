@@ -1,13 +1,19 @@
 <div class="min-h-screen flex flex-col bg-zinc-950 text-zinc-100">
-  <app-navbar />
+  @if (authService.isAuthenticated()) {
+    <app-navbar />
 
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <router-outlet />
-  </main>
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <router-outlet />
+    </main>
 
-  <footer class="border-t border-zinc-900 bg-zinc-950/60 py-6 text-center text-xs text-zinc-600">
-    <div class="max-w-7xl mx-auto px-4">
-      Auto Maintenance &copy; 2026 &mdash; Sistema de Gestão de Manutenção de Veículos
-    </div>
-  </footer>
+    <footer class="border-t border-zinc-900 bg-zinc-950/60 py-6 text-center text-xs text-zinc-600">
+      <div class="max-w-7xl mx-auto px-4">
+        AutoCare &copy; 2026 &mdash; Sistema de Gestão de Manutenção de Veículos
+      </div>
+    </footer>
+  } @else {
+    <main class="flex-1">
+      <router-outlet />
+    </main>
+  }
 </div>
