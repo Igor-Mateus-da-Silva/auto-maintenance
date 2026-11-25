@@ -4,8 +4,8 @@ Sistema simples e direto para gestão de veículos, catálogo de manutenções p
 
 ## Stack
 
-- **Backend:** Go (biblioteca padrão `net/http` + `database/sql`), SQLite (`modernc.org/sqlite`), autenticação via JWT (`golang-jwt/jwt/v5`).
-- **Frontend:** Angular (Standalone Components, Signals, `@if`/`@for`), Tailwind CSS v4 (tema dark minimalista) e `lucide-angular`.
+- **Backend:** Go (biblioteca padrão `net/http` + `database/sql`), SQLite (`modernc.org/sqlite`), autenticação via JWT (`golang-jwt/jwt/v5`) em cookie `HttpOnly`.
+- **Frontend:** Angular (Standalone Components, Signals, `@if`/`@for`, PWA), Tailwind CSS v4 (tema dark minimalista) e `@lucide/angular`.
 
 ---
 
@@ -17,16 +17,16 @@ Sistema simples e direto para gestão de veículos, catálogo de manutenções p
    ```bash
    cd backend
    ```
-2. Copie o arquivo de exemplo de variáveis de ambiente (ou defina no terminal):
+2. Copie o arquivo de exemplo de variáveis de ambiente:
    ```bash
    cp .env.example .env
    ```
-   Variáveis principais (possuem valores padrão em desenvolvimento caso omitidas):
+   Variáveis principais (o backend carrega automaticamente o `.env` se presente e exige `APP_ACCESS_KEY` e `JWT_SECRET` definidos):
    - `PORT=8080`
    - `DB_PATH=./data/car_maintenance.db`
    - `CORS_ALLOWED_ORIGINS=http://localhost:4200`
-   - `APP_ACCESS_KEY=admin123` *(chave utilizada para login no sistema)*
-   - `JWT_SECRET=super-secret-jwt-key-auto-maintenance`
+   - `APP_ACCESS_KEY` *(chave utilizada para login no sistema)*
+   - `JWT_SECRET` *(segredo aleatório com pelo menos 32 caracteres)*
 
 3. Inicie o servidor:
    ```bash
@@ -47,7 +47,7 @@ Sistema simples e direto para gestão de veículos, catálogo de manutenções p
    ```bash
    cd frontend
    ```
-2. Instale as dependências (caso ainda não tenha instalado):
+2. Instale as dependências:
    ```bash
    npm install
    ```
@@ -55,4 +55,36 @@ Sistema simples e direto para gestão de veículos, catálogo de manutenções p
    ```bash
    npm start
    ```
-4. Acesse **`http://localhost:4200`** e faça login utilizando a chave definida em `APP_ACCESS_KEY` (padrão: `admin123`).
+4. Acesse **`http://localhost:4200`** e faça login utilizando a chave definida em `APP_ACCESS_KEY`.
+
+---
+
+## Deploy
+
+### Frontend na Vercel (PWA)
+
+1. Importe o repositório na **Vercel** e defina o **Root Directory** como `frontend`.
+2. Nas configurações do projeto (**Settings → Environment Variables**), adicione a variável:
+   - `API_URL`: URL pública da sua API Go (ex.: `https://autocare-api.fly.dev/api`).
+3. O arquivo `frontend/vercel.json` já configura o build (`npm run build`), o diretório de saída (`dist/frontend/browser`), rewrites de SPA e os headers de cache adequados para o Service Worker (`ngsw-worker.js` e `ngsw.json`).
+
+### Backend em Produção (Docker)
+
+O `backend/Dockerfile` utiliza build multi-stage (`CGO_ENABLED=0`) gerando uma imagem Alpine enxuta executando com usuário não-root e expondo a porta `8080`:
+
+```bash
+cd backend
+docker build -t autocare-api .
+docker run -d \
+  -p 8080:8080 \
+  -v autocare_data:/app/data \
+  -e ENV=production \
+  -e DB_PATH=/app/data/car_maintenance.db \
+  -e APP_ACCESS_KEY="sua-chave-forte" \
+  -e JWT_SECRET="seu-segredo-jwt-aleatorio-com-32-ou-mais-caracteres" \
+  -e CORS_ALLOWED_ORIGINS="https://seu-app.vercel.app" \
+  autocare-api
+```
+
+- **Persistência:** Monte sempre um volume persistente em `/app/data` (ex.: Fly Volumes, Railway Volume ou bind mount em VPS) para preservar o banco SQLite entre deploys.
+- **CORS:** Informe em `CORS_ALLOWED_ORIGINS` a URL exata do frontend na Vercel (suporta múltiplas origens separadas por vírgula).
