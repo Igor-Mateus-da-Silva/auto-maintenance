@@ -48,6 +48,8 @@ func main() {
 
 	// Handlers and middlewares
 	authHandler := handler.NewAuthHandler(cfg.AppAccessKey, cfg.JWTSecret)
+	vehicleHandler := handler.NewVehicleHandler(db)
+	maintenanceTypeHandler := handler.NewMaintenanceTypeHandler(db)
 	requireAuth := middleware.RequireAuth(cfg.JWTSecret)
 
 	mux := http.NewServeMux()
@@ -56,8 +58,21 @@ func main() {
 	mux.HandleFunc("GET /api/health", handler.HealthHandler)
 	mux.HandleFunc("POST /api/login", authHandler.Login)
 
-	// Protected routes
+	// Protected routes - Auth
 	mux.Handle("GET /api/auth/verify", requireAuth(http.HandlerFunc(authHandler.Verify)))
+
+	// Protected routes - Vehicles
+	mux.Handle("GET /api/vehicles", requireAuth(http.HandlerFunc(vehicleHandler.List)))
+	mux.Handle("POST /api/vehicles", requireAuth(http.HandlerFunc(vehicleHandler.Create)))
+	mux.Handle("PUT /api/vehicles/{id}", requireAuth(http.HandlerFunc(vehicleHandler.Update)))
+	mux.Handle("PATCH /api/vehicles/{id}/mileage", requireAuth(http.HandlerFunc(vehicleHandler.UpdateMileage)))
+	mux.Handle("DELETE /api/vehicles/{id}", requireAuth(http.HandlerFunc(vehicleHandler.Delete)))
+
+	// Protected routes - Maintenance Types
+	mux.Handle("GET /api/maintenance-types", requireAuth(http.HandlerFunc(maintenanceTypeHandler.List)))
+	mux.Handle("POST /api/maintenance-types", requireAuth(http.HandlerFunc(maintenanceTypeHandler.Create)))
+	mux.Handle("PUT /api/maintenance-types/{id}", requireAuth(http.HandlerFunc(maintenanceTypeHandler.Update)))
+	mux.Handle("DELETE /api/maintenance-types/{id}", requireAuth(http.HandlerFunc(maintenanceTypeHandler.Delete)))
 
 	// Chain global middlewares: Logger and CORS
 	corsMiddleware := middleware.CORS(cfg.CORSAllowedOrigins)
