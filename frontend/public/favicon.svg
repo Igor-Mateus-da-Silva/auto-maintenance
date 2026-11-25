@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="#09090b" stroke="#27272a" stroke-width="16" />
+
+  <!-- Minimalist Car Silhouette -->
+  <path
+    d="M128 286 L156 196 C164 174 184 160 208 160 H304 C328 160 348 174 356 196 L384 286 V346 C384 358 374 368 362 368 H342 C330 368 320 358 320 346 V330 H192 V346 C192 358 182 368 170 368 H150 C138 368 128 358 128 346 Z"
+    fill="none"
+    stroke="#fafafa"
+    stroke-width="24"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+
+  <!-- Windshield / Cabin Line -->
+  <path
+    d="M158 242 H354"
+    stroke="#fafafa"
+    stroke-width="20"
+    stroke-linecap="round"
+  />
+
+  <!-- Headlights -->
+  <circle cx="176" cy="286" r="16" fill="#fafafa" />
+  <circle cx="336" cy="286" r="16" fill="#fafafa" />
+
+  <!-- Emerald Status Accent Dot (AutoCare active indicator) -->
+  <circle cx="384" cy="128" r="34" fill="#10b981" stroke="#09090b" stroke-width="12" />
+</svg>

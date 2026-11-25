@@ -6,31 +6,25 @@ import { AuthService } from '../services/auth.service';
 export const apiInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
 
-  const isPublicEndpoint = req.url.endsWith('/login') || req.url.endsWith('/health');
+  const isAuthBypassEndpoint =
+    req.url.endsWith('/login') ||
+    req.url.endsWith('/logout') ||
+    req.url.endsWith('/health') ||
+    req.url.endsWith('/auth/verify');
 
-  let request = req.clone({
+  const request = req.clone({
+    withCredentials: true,
     setHeaders: {
-      Accept: 'application/json',
-    },
-  });
-
-  if (!isPublicEndpoint) {
-    const token = authService.getToken();
-    if (token) {
-      request = request.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      Accept: 'application/json'
     }
-  }
+  });
 
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !isPublicEndpoint) {
-        authService.logout();
+      if (error.status === 401 && !isAuthBypassEndpoint) {
+        authService.clearSession();
       }
       return throwError(() => error);
-    }),
+    })
   );
 };

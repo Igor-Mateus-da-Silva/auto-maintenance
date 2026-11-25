@@ -2,20 +2,20 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { LucideAngularModule, KeyRound, Eye, EyeOff, Loader2 } from 'lucide-angular';
+import { LucideKeyRound, LucideEye, LucideEyeOff, LucideLoaderCircle } from '@lucide/angular';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule],
+  imports: [FormsModule, LucideKeyRound, LucideEye, LucideEyeOff, LucideLoaderCircle],
   template: `
     <div class="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
       <div class="bg-zinc-900/70 border border-zinc-800 rounded-xl p-8 max-w-sm w-full shadow-2xl shadow-black/50">
         <!-- Header -->
         <div class="flex flex-col items-center text-center mb-8">
           <div class="w-11 h-11 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-zinc-200 mb-4">
-            <lucide-icon [img]="KeyRoundIcon" class="w-5 h-5"></lucide-icon>
+            <svg lucideKeyRound class="w-5 h-5"></svg>
           </div>
           <h1 class="text-xl font-semibold tracking-tight text-zinc-100">Acesso ao Sistema</h1>
           <p class="text-xs text-zinc-400 mt-1.5">
@@ -48,9 +48,9 @@ import { AuthService } from '../../core/services/auth.service';
                 class="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-500 hover:text-zinc-300 transition"
               >
                 @if (showPassword()) {
-                  <lucide-icon [img]="EyeOffIcon" class="w-4 h-4"></lucide-icon>
+                  <svg lucideEyeOff class="w-4 h-4"></svg>
                 } @else {
-                  <lucide-icon [img]="EyeIcon" class="w-4 h-4"></lucide-icon>
+                  <svg lucideEye class="w-4 h-4"></svg>
                 }
               </button>
             </div>
@@ -68,7 +68,7 @@ import { AuthService } from '../../core/services/auth.service';
             class="w-full flex items-center justify-center gap-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-medium text-sm py-2.5 px-4 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             @if (loading()) {
-              <lucide-icon [img]="LoaderIcon" class="w-4 h-4 animate-spin"></lucide-icon>
+              <svg lucideLoaderCircle class="w-4 h-4 animate-spin"></svg>
               <span>Entrando...</span>
             } @else {
               <span>Entrar</span>
@@ -82,11 +82,6 @@ import { AuthService } from '../../core/services/auth.service';
 export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-
-  protected readonly KeyRoundIcon = KeyRound;
-  protected readonly EyeIcon = Eye;
-  protected readonly EyeOffIcon = EyeOff;
-  protected readonly LoaderIcon = Loader2;
 
   protected accessKey = '';
   protected readonly showPassword = signal(false);
@@ -114,6 +109,8 @@ export class LoginComponent {
         this.loading.set(false);
         if (err.status === 401) {
           this.errorMessage.set('Chave de acesso inválida.');
+        } else if (err.status === 429) {
+          this.errorMessage.set('Muitas tentativas de login. Aguarde um minuto e tente novamente.');
         } else if (err.status === 0) {
           this.errorMessage.set('Servidor indisponível. Verifique se a API está em execução.');
         } else {

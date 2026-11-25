@@ -10,19 +10,18 @@ import {
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
-  LucideAngularModule,
-  Car,
-  Gauge,
-  CheckCircle2,
-  AlertTriangle,
-  AlertCircle,
-  Clock,
-  RefreshCw,
-  Check,
-  X,
-  Plus,
-  Loader2
-} from 'lucide-angular';
+  LucideCar,
+  LucideGauge,
+  LucideCircleCheck,
+  LucideTriangleExclamationPoint,
+  LucideCircleExclamationPoint,
+  LucideClock,
+  LucideRefreshCw,
+  LucideCheck,
+  LucideX,
+  LucidePlus,
+  LucideLoaderCircle
+} from '@lucide/angular';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { VehicleService } from '../../core/services/vehicle.service';
 import {
@@ -35,7 +34,21 @@ import { Vehicle } from '../../shared/models/vehicle.model';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule, RouterLink, LucideAngularModule],
+  imports: [
+    FormsModule,
+    RouterLink,
+    LucideCar,
+    LucideGauge,
+    LucideCircleCheck,
+    LucideTriangleExclamationPoint,
+    LucideCircleExclamationPoint,
+    LucideClock,
+    LucideRefreshCw,
+    LucideCheck,
+    LucideX,
+    LucidePlus,
+    LucideLoaderCircle
+  ],
   template: `
     <div class="space-y-8">
       <!-- A. Header & Vehicle Filter -->
@@ -99,7 +112,7 @@ import { Vehicle } from '../../shared/models/vehicle.model';
         @if (dash.vehicles.length === 0) {
           <div class="py-16 px-6 rounded-xl border border-zinc-800/80 bg-zinc-900/30 text-center max-w-lg mx-auto">
             <div class="w-12 h-12 rounded-xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-zinc-400 mx-auto mb-4">
-              <lucide-icon [img]="CarIcon" class="w-6 h-6"></lucide-icon>
+              <svg lucideCar class="w-6 h-6"></svg>
             </div>
             <h2 class="text-base font-semibold text-zinc-100">Nenhum veículo cadastrado</h2>
             <p class="text-sm text-zinc-400 mt-1.5 mb-6">
@@ -109,7 +122,7 @@ import { Vehicle } from '../../shared/models/vehicle.model';
               routerLink="/vehicles"
               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-sm font-medium transition"
             >
-              <lucide-icon [img]="PlusIcon" class="w-4 h-4"></lucide-icon>
+              <svg lucidePlus class="w-4 h-4"></svg>
               <span>Cadastrar primeiro veículo</span>
             </a>
           </div>
@@ -154,9 +167,9 @@ import { Vehicle } from '../../shared/models/vehicle.model';
                         class="p-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 transition disabled:opacity-50 cursor-pointer shrink-0"
                       >
                         @if (savingMileageId() === vehicle.id) {
-                          <lucide-icon [img]="LoaderIcon" class="w-4 h-4 animate-spin"></lucide-icon>
+                          <svg lucideLoaderCircle class="w-4 h-4 animate-spin"></svg>
                         } @else {
-                          <lucide-icon [img]="CheckIcon" class="w-4 h-4"></lucide-icon>
+                          <svg lucideCheck class="w-4 h-4"></svg>
                         }
                       </button>
                       <button
@@ -165,13 +178,13 @@ import { Vehicle } from '../../shared/models/vehicle.model';
                         aria-label="Cancelar edição"
                         class="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition cursor-pointer shrink-0"
                       >
-                        <lucide-icon [img]="XIcon" class="w-4 h-4"></lucide-icon>
+                        <svg lucideX class="w-4 h-4"></svg>
                       </button>
                     </form>
                   } @else {
                     <div class="flex items-center justify-between gap-2 pt-1">
                       <div class="flex items-center gap-1.5 text-zinc-200 font-semibold text-base tabular-nums">
-                        <lucide-icon [img]="GaugeIcon" class="w-4 h-4 text-zinc-500"></lucide-icon>
+                        <svg lucideGauge class="w-4 h-4 text-zinc-500"></svg>
                         <span>{{ formatNumber(vehicle.current_mileage) }} km</span>
                       </div>
                       <button
@@ -220,7 +233,7 @@ import { Vehicle } from '../../shared/models/vehicle.model';
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-emerald-400">Em dia</span>
-                <lucide-icon [img]="CheckCircleIcon" class="w-4 h-4 text-emerald-500/70"></lucide-icon>
+                <svg lucideCircleCheck class="w-4 h-4 text-emerald-500/70"></svg>
               </div>
               <div class="mt-2 text-2xl font-semibold text-zinc-100 tabular-nums">
                 {{ dash.summary.ok }}
@@ -240,7 +253,7 @@ import { Vehicle } from '../../shared/models/vehicle.model';
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-amber-400">Próximas de vencer</span>
-                <lucide-icon [img]="AlertTriangleIcon" class="w-4 h-4 text-amber-500/70"></lucide-icon>
+                <svg lucideTriangleExclamationPoint class="w-4 h-4 text-amber-500/70"></svg>
               </div>
               <div class="mt-2 text-2xl font-semibold text-zinc-100 tabular-nums">
                 {{ dash.summary.warning }}
@@ -260,7 +273,7 @@ import { Vehicle } from '../../shared/models/vehicle.model';
             >
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-rose-400">Vencidas</span>
-                <lucide-icon [img]="AlertCircleIcon" class="w-4 h-4 text-rose-500/70"></lucide-icon>
+                <svg lucideCircleExclamationPoint class="w-4 h-4 text-rose-500/70"></svg>
               </div>
               <div class="mt-2 text-2xl font-semibold text-zinc-100 tabular-nums">
                 {{ dash.summary.overdue }}
@@ -334,14 +347,14 @@ import { Vehicle } from '../../shared/models/vehicle.model';
                       <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-zinc-400">
                         @if (item.expiration_type === 'time' || item.expiration_type === 'both') {
                           <div class="flex items-center gap-1.5">
-                            <lucide-icon [img]="ClockIcon" class="w-3.5 h-3.5 text-zinc-500"></lucide-icon>
+                            <svg lucideClock class="w-3.5 h-3.5 text-zinc-500"></svg>
                             <span>{{ formatTimeStatus(item) }}</span>
                           </div>
                         }
 
                         @if (item.expiration_type === 'km' || item.expiration_type === 'both') {
                           <div class="flex items-center gap-1.5">
-                            <lucide-icon [img]="GaugeIcon" class="w-3.5 h-3.5 text-zinc-500"></lucide-icon>
+                            <svg lucideGauge class="w-3.5 h-3.5 text-zinc-500"></svg>
                             <span>{{ formatKmStatus(item) }}</span>
                           </div>
                         }
@@ -355,7 +368,7 @@ import { Vehicle } from '../../shared/models/vehicle.model';
                         (click)="openRenewModal(item)"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 text-xs font-medium transition cursor-pointer"
                       >
-                        <lucide-icon [img]="RefreshIcon" class="w-3.5 h-3.5"></lucide-icon>
+                        <svg lucideRefreshCw class="w-3.5 h-3.5"></svg>
                         <span>Renovar</span>
                       </button>
                     </div>
@@ -392,7 +405,7 @@ import { Vehicle } from '../../shared/models/vehicle.model';
                 aria-label="Fechar modal"
                 class="p-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition cursor-pointer"
               >
-                <lucide-icon [img]="XIcon" class="w-4 h-4"></lucide-icon>
+                <svg lucideX class="w-4 h-4"></svg>
               </button>
             </div>
 
@@ -464,10 +477,10 @@ import { Vehicle } from '../../shared/models/vehicle.model';
                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition disabled:opacity-50 cursor-pointer"
                 >
                   @if (savingRenew()) {
-                    <lucide-icon [img]="LoaderIcon" class="w-3.5 h-3.5 animate-spin"></lucide-icon>
+                    <svg lucideLoaderCircle class="w-3.5 h-3.5 animate-spin"></svg>
                     <span>Salvando...</span>
                   } @else {
-                    <lucide-icon [img]="CheckIcon" class="w-3.5 h-3.5"></lucide-icon>
+                    <svg lucideCheck class="w-3.5 h-3.5"></svg>
                     <span>Confirmar Renovação</span>
                   }
                 </button>
@@ -486,17 +499,6 @@ export class DashboardComponent implements OnInit {
   protected readonly renewDialog = viewChild<ElementRef<HTMLDialogElement>>('renewDialog');
 
   // Icons
-  protected readonly CarIcon = Car;
-  protected readonly GaugeIcon = Gauge;
-  protected readonly CheckCircleIcon = CheckCircle2;
-  protected readonly AlertTriangleIcon = AlertTriangle;
-  protected readonly AlertCircleIcon = AlertCircle;
-  protected readonly ClockIcon = Clock;
-  protected readonly RefreshIcon = RefreshCw;
-  protected readonly CheckIcon = Check;
-  protected readonly XIcon = X;
-  protected readonly PlusIcon = Plus;
-  protected readonly LoaderIcon = Loader2;
 
   // Dashboard state
   protected readonly dashboard = signal<DashboardResponse | null>(null);

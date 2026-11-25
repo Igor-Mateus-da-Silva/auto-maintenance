@@ -1,17 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
-
-export interface LoginResponse {
-  token: string;
-}
+import { Observable, catchError, map, of, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface VerifyResponse {
   authenticated: boolean;
 }
-
-const TOKEN_KEY = 'car_maintenance_token';
 
 @Injectable({
   providedIn: 'root'
@@ -19,44 +14,52 @@ const TOKEN_KEY = 'car_maintenance_token';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  private readonly apiUrl = 'http://localhost:8080/api';
+  private readonly apiUrl = environment.apiUrl;
 
-  readonly isAuthenticated = signal<boolean>(this.hasToken());
+  readonly isAuthenticated = signal<boolean>(false);
+  readonly sessionChecked = signal<boolean>(false);
 
-  private hasToken(): boolean {
-    if (typeof localStorage === 'undefined') {
-      return false;
-    }
-    return !!localStorage.getItem(TOKEN_KEY);
-  }
-
-  getToken(): string | null {
-    if (typeof localStorage === 'undefined') {
-      return null;
-    }
-    return localStorage.getItem(TOKEN_KEY);
-  }
-
-  login(accessKey: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { access_key: accessKey }).pipe(
+  login(accessKey: string): Observable<VerifyResponse> {
+    return this.http.post<VerifyResponse>(`${this.apiUrl}/login`, { access_key: accessKey }).pipe(
       tap((res) => {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(TOKEN_KEY, res.token);
-        }
-        this.isAuthenticated.set(true);
+        this.isAuthenticated.set(res.authenticated);
+        this.sessionChecked.set(true);
       })
     );
   }
 
   logout(): void {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(TOKEN_KEY);
-    }
+    this.http
+      .post<VerifyResponse>(`${this.apiUrl}/logout`, {})
+      .pipe(catchError(() => of(null)))
+      .subscribe(() => {
+        this.clearSession();
+      });
+  }
+
+  clearSession(): void {
     this.isAuthenticated.set(false);
+    this.sessionChecked.set(true);
     void this.router.navigate(['/login']);
   }
 
   verifySession(): Observable<VerifyResponse> {
     return this.http.get<VerifyResponse>(`${this.apiUrl}/auth/verify`);
+  }
+
+  checkSession(): Observable<boolean> {
+    return this.verifySession().pipe(
+      map((res) => {
+        const valid = !!res.authenticated;
+        this.isAuthenticated.set(valid);
+        this.sessionChecked.set(true);
+        return valid;
+      }),
+      catchError(() => {
+        this.isAuthenticated.set(false);
+        this.sessionChecked.set(true);
+        return of(false);
+      })
+    );
   }
 }
