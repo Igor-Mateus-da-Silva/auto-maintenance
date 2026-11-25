@@ -11,7 +11,7 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
   let request = req.clone({
     setHeaders: {
       Accept: 'application/json',
-    }
+    },
   });
 
   if (!isPublicEndpoint) {
@@ -20,7 +20,7 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
       request = request.clone({
         setHeaders: {
           Authorization: `Bearer ${token}`,
-        }
+        },
       });
     }
   }
@@ -31,6 +31,6 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
         authService.logout();
       }
       return throwError(() => error);
-    })
+    }),
   );
 };
