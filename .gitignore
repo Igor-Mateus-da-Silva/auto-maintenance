@@ -13,7 +13,11 @@ backend/*.db
 backend/*.db-journal
 backend/*.db-wal
 backend/*.db-shm
+backend/data/
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Environment files
 backend/.env

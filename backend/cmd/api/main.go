@@ -23,7 +23,11 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		slog.Error("Invalid configuration", "error", err)
+		os.Exit(1)
+	}
 
 	// Initialize SQLite database
 	db, err := database.Connect(cfg.DBPath)
@@ -47,18 +51,21 @@ func main() {
 	slog.Info("Database migrations completed successfully", "path", cfg.DBPath)
 
 	// Handlers and middlewares
-	authHandler := handler.NewAuthHandler(cfg.AppAccessKey, cfg.JWTSecret)
+	isProd := cfg.Env == "production"
+	authHandler := handler.NewAuthHandler(cfg.AppAccessKey, cfg.JWTSecret, isProd)
 	vehicleHandler := handler.NewVehicleHandler(db)
 	maintenanceTypeHandler := handler.NewMaintenanceTypeHandler(db)
 	vehicleMaintenanceHandler := handler.NewVehicleMaintenanceHandler(db)
 	dashboardHandler := handler.NewDashboardHandler(db)
 	requireAuth := middleware.RequireAuth(cfg.JWTSecret)
+	loginRateLimiter := middleware.NewRateLimiter(5, time.Minute)
 
 	mux := http.NewServeMux()
 
 	// Public routes
 	mux.HandleFunc("GET /api/health", handler.HealthHandler)
-	mux.HandleFunc("POST /api/login", authHandler.Login)
+	mux.Handle("POST /api/login", loginRateLimiter.Middleware(http.HandlerFunc(authHandler.Login)))
+	mux.HandleFunc("POST /api/logout", authHandler.Logout)
 
 	// Protected routes - Auth
 	mux.Handle("GET /api/auth/verify", requireAuth(http.HandlerFunc(authHandler.Verify)))
@@ -85,9 +92,10 @@ func main() {
 	// Protected routes - Dashboard
 	mux.Handle("GET /api/dashboard", requireAuth(http.HandlerFunc(dashboardHandler.Get)))
 
-	// Chain global middlewares: Logger and CORS
+	// Chain global middlewares: Logger, SecurityHeaders, and CORS
 	corsMiddleware := middleware.CORS(cfg.CORSAllowedOrigins)
-	handlerWithMiddlewares := middleware.Logger(corsMiddleware(mux))
+	securityMiddleware := middleware.SecurityHeaders(isProd)
+	handlerWithMiddlewares := middleware.Logger(securityMiddleware(corsMiddleware(mux)))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),

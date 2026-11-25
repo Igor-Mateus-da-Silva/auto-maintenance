@@ -33,14 +33,14 @@ func (h *DashboardHandler) Get(w http.ResponseWriter, r *http.Request) {
 	// Fetch all vehicles for the selector and quick mileage update
 	vehicles, err := h.listVehicles(r)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "erro ao listar veículos para o dashboard")
+		writeInternalError(w, "erro ao listar veículos para o dashboard", err)
 		return
 	}
 
 	// Fetch maintenances (filtered if vehicle_id provided)
 	maintenances, err := fetchMaintenanceDetails(r.Context(), h.db, filterVehicleID, time.Now())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "erro ao carregar manutenções para o dashboard")
+		writeInternalError(w, "erro ao carregar manutenções para o dashboard", err)
 		return
 	}
 

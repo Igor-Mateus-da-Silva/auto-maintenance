@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -58,8 +57,7 @@ func (h *VehicleMaintenanceHandler) Create(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req model.CreateVehicleMaintenanceRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "corpo da requisição inválido")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -73,8 +71,12 @@ func (h *VehicleMaintenanceHandler) Create(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if req.LastPerformedMileage < 0 {
-		writeError(w, http.StatusBadRequest, "a quilometragem da manutenção deve ser maior ou igual a zero")
+	if req.LastPerformedMileage < 0 || req.LastPerformedMileage > 10_000_000 {
+		writeError(w, http.StatusBadRequest, "a quilometragem da manutenção deve estar entre 0 e 10.000.000 km")
+		return
+	}
+	if req.Notes != nil && len(*req.Notes) > 500 {
+		writeError(w, http.StatusBadRequest, "as observações devem ter no máximo 500 caracteres")
 		return
 	}
 
@@ -132,8 +134,7 @@ func (h *VehicleMaintenanceHandler) Update(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req model.UpdateVehicleMaintenanceRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "corpo da requisição inválido")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -142,8 +143,12 @@ func (h *VehicleMaintenanceHandler) Update(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if req.LastPerformedMileage < 0 {
-		writeError(w, http.StatusBadRequest, "a quilometragem da manutenção deve ser maior ou igual a zero")
+	if req.LastPerformedMileage < 0 || req.LastPerformedMileage > 10_000_000 {
+		writeError(w, http.StatusBadRequest, "a quilometragem da manutenção deve estar entre 0 e 10.000.000 km")
+		return
+	}
+	if req.Notes != nil && len(*req.Notes) > 500 {
+		writeError(w, http.StatusBadRequest, "as observações devem ter no máximo 500 caracteres")
 		return
 	}
 

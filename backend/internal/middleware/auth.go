@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -13,29 +12,37 @@ type authErrorResponse struct {
 	Error string `json:"error"`
 }
 
-// RequireAuth returns a middleware that validates the Bearer JWT token.
+// RequireAuth returns a middleware that validates the HS256 JWT from the HttpOnly cookie
+// (or Authorization: Bearer header as fallback), requiring an exp claim.
 func RequireAuth(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				respondUnauthorized(w, "cabeçalho de autorização ausente")
-				return
-			}
+			tokenStr := ""
 
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-				respondUnauthorized(w, "formato do token inválido, esperado 'Bearer <token>'")
-				return
-			}
-
-			tokenStr := strings.TrimSpace(parts[1])
-			token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("método de assinatura inesperado: %v", t.Header["alg"])
+			if cookie, err := r.Cookie("auth_token"); err == nil && strings.TrimSpace(cookie.Value) != "" {
+				tokenStr = strings.TrimSpace(cookie.Value)
+			} else if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+				parts := strings.SplitN(authHeader, " ", 2)
+				if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+					respondUnauthorized(w, "formato do token inválido, esperado 'Bearer <token>'")
+					return
 				}
-				return []byte(jwtSecret), nil
-			})
+				tokenStr = strings.TrimSpace(parts[1])
+			}
+
+			if tokenStr == "" {
+				respondUnauthorized(w, "autenticação necessária")
+				return
+			}
+
+			token, err := jwt.Parse(
+				tokenStr,
+				func(t *jwt.Token) (interface{}, error) {
+					return []byte(jwtSecret), nil
+				},
+				jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+				jwt.WithExpirationRequired(),
+			)
 
 			if err != nil || !token.Valid {
 				respondUnauthorized(w, "token inválido ou expirado")

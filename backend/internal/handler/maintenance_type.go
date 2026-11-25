@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -72,8 +71,7 @@ func (h *MaintenanceTypeHandler) List(w http.ResponseWriter, r *http.Request) {
 // Create handles POST /api/maintenance-types
 func (h *MaintenanceTypeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateMaintenanceTypeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "corpo da requisição inválido")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -117,8 +115,7 @@ func (h *MaintenanceTypeHandler) Update(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req model.UpdateMaintenanceTypeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "corpo da requisição inválido")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
@@ -178,27 +175,28 @@ func (h *MaintenanceTypeHandler) Delete(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *MaintenanceTypeHandler) validate(name, expirationType string, days, km *int) (*int, *int, error) {
-	if strings.TrimSpace(name) == "" {
-		return nil, nil, errors.New("o nome do tipo de manutenção é obrigatório")
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" || len(trimmedName) > 120 {
+		return nil, nil, errors.New("o nome do tipo de manutenção é obrigatório e deve ter no máximo 120 caracteres")
 	}
 
 	switch expirationType {
 	case "time":
-		if days == nil || *days <= 0 {
-			return nil, nil, errors.New("para o tipo 'time', o intervalo em dias é obrigatório e deve ser maior que zero")
+		if days == nil || *days <= 0 || *days > 36500 {
+			return nil, nil, errors.New("para o tipo 'time', o intervalo em dias deve estar entre 1 e 36.500")
 		}
 		return days, nil, nil
 	case "km":
-		if km == nil || *km <= 0 {
-			return nil, nil, errors.New("para o tipo 'km', o intervalo em km é obrigatório e deve ser maior que zero")
+		if km == nil || *km <= 0 || *km > 1_000_000 {
+			return nil, nil, errors.New("para o tipo 'km', o intervalo em km deve estar entre 1 e 1.000.000")
 		}
 		return nil, km, nil
 	case "both":
-		if days == nil || *days <= 0 {
-			return nil, nil, errors.New("para o tipo 'both', o intervalo em dias é obrigatório e deve ser maior que zero")
+		if days == nil || *days <= 0 || *days > 36500 {
+			return nil, nil, errors.New("para o tipo 'both', o intervalo em dias deve estar entre 1 e 36.500")
 		}
-		if km == nil || *km <= 0 {
-			return nil, nil, errors.New("para o tipo 'both', o intervalo em km é obrigatório e deve ser maior que zero")
+		if km == nil || *km <= 0 || *km > 1_000_000 {
+			return nil, nil, errors.New("para o tipo 'both', o intervalo em km deve estar entre 1 e 1.000.000")
 		}
 		return days, km, nil
 	default:

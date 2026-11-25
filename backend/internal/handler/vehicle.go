@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -66,18 +65,13 @@ func (h *VehicleHandler) List(w http.ResponseWriter, r *http.Request) {
 // Create handles POST /api/vehicles
 func (h *VehicleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateVehicleRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "corpo da requisição inválido")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		writeError(w, http.StatusBadRequest, "o nome do veículo é obrigatório")
-		return
-	}
-	if req.CurrentMileage < 0 {
-		writeError(w, http.StatusBadRequest, "a quilometragem atual deve ser maior ou igual a zero")
+	name, plate, err := validateVehicleInput(req.Name, req.Plate, req.Year, req.CurrentMileage)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -85,9 +79,9 @@ func (h *VehicleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		INSERT INTO vehicles (name, plate, year, current_mileage, created_at, updated_at)
 		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`
-	res, err := h.db.ExecContext(r.Context(), insertQuery, name, req.Plate, req.Year, req.CurrentMileage)
+	res, err := h.db.ExecContext(r.Context(), insertQuery, name, plate, req.Year, req.CurrentMileage)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "erro ao criar veículo")
+		writeInternalError(w, "erro ao criar veículo", err)
 		return
 	}
 
@@ -115,18 +109,13 @@ func (h *VehicleHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req model.UpdateVehicleRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "corpo da requisição inválido")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		writeError(w, http.StatusBadRequest, "o nome do veículo é obrigatório")
-		return
-	}
-	if req.CurrentMileage < 0 {
-		writeError(w, http.StatusBadRequest, "a quilometragem atual deve ser maior ou igual a zero")
+	name, plate, err := validateVehicleInput(req.Name, req.Plate, req.Year, req.CurrentMileage)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -135,9 +124,9 @@ func (h *VehicleHandler) Update(w http.ResponseWriter, r *http.Request) {
 		SET name = ?, plate = ?, year = ?, current_mileage = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`
-	res, err := h.db.ExecContext(r.Context(), updateQuery, name, req.Plate, req.Year, req.CurrentMileage, id)
+	res, err := h.db.ExecContext(r.Context(), updateQuery, name, plate, req.Year, req.CurrentMileage, id)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "erro ao atualizar veículo")
+		writeInternalError(w, "erro ao atualizar veículo", err)
 		return
 	}
 
@@ -165,13 +154,12 @@ func (h *VehicleHandler) UpdateMileage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req model.UpdateMileageRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "corpo da requisição inválido")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
-	if req.CurrentMileage < 0 {
-		writeError(w, http.StatusBadRequest, "a quilometragem atual deve ser maior ou igual a zero")
+	if req.CurrentMileage < 0 || req.CurrentMileage > 10_000_000 {
+		writeError(w, http.StatusBadRequest, "a quilometragem atual deve estar entre 0 e 10.000.000 km")
 		return
 	}
 
@@ -182,7 +170,7 @@ func (h *VehicleHandler) UpdateMileage(w http.ResponseWriter, r *http.Request) {
 	`
 	res, err := h.db.ExecContext(r.Context(), updateQuery, req.CurrentMileage, id)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "erro ao atualizar quilometragem")
+		writeInternalError(w, "erro ao atualizar quilometragem", err)
 		return
 	}
 
@@ -250,4 +238,32 @@ func (h *VehicleHandler) getByID(ctx context.Context, id int64) (*model.Vehicle,
 		v.Year = &y
 	}
 	return &v, nil
+}
+
+func validateVehicleInput(name string, plate *string, year *int, mileage int) (string, *string, error) {
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" || len(trimmedName) > 120 {
+		return "", nil, errors.New("o nome do veículo é obrigatório e deve ter no máximo 120 caracteres")
+	}
+
+	var cleanPlate *string
+	if plate != nil {
+		trimmedPlate := strings.TrimSpace(*plate)
+		if len(trimmedPlate) > 20 {
+			return "", nil, errors.New("a placa deve ter no máximo 20 caracteres")
+		}
+		if trimmedPlate != "" {
+			cleanPlate = &trimmedPlate
+		}
+	}
+
+	if year != nil && (*year < 1900 || *year > 2100) {
+		return "", nil, errors.New("o ano do veículo deve estar entre 1900 e 2100")
+	}
+
+	if mileage < 0 || mileage > 10_000_000 {
+		return "", nil, errors.New("a quilometragem atual deve estar entre 0 e 10.000.000 km")
+	}
+
+	return trimmedName, cleanPlate, nil
 }
